@@ -832,7 +832,7 @@ function renderSoil(){
  if(!isNaN(ph)&&ph>=2&&ph<=11){
   const [lo,hi]=CROPS_CFG[crop].ph;const band=PHTEXT[ph<lo-1?0:ph<lo?1:ph<=hi?2:ph<=hi+1?3:4];
   phOut=`<div class="card ${band.cls}"><b>pH ${ph.toFixed(1)}</b>${phScale(ph)}<p>${t(band.t)}</p></div>`+limeCard(ph,lo,hi)+`<div class="card"><b>${t(UI.avail)}</b>`;
-  for(const id of ['N','P','K','Ca','Mg','S','Fe','Mn','Zn','Cu','B','Mo']){const a=interp(PHC[id],ph);phOut+=bar(`${id} ${t(N[id].name)}`,a,a<.4?'#9b1c1c':a<.7?'#c27a00':'#2e6b34');}
+  for(const id of ['N','P','K','Ca','Mg','S','Fe','Mn','Zn','Cu','B','Mo']){const a=interp(PHC[id],ph);phOut+=bar(lang==='zh'?`${id} ${t(N[id].name)}`:id,a,a<.4?'#9b1c1c':a<.7?'#c27a00':'#2e6b34');}
   const al=interp(PHC.AL,ph);phOut+=bar(t(UI.alrisk),al,al>.5?'#9b1c1c':al>.1?'#c27a00':'#2e6b34',true)+`</div>`;
  }else phOut=`${phScale(NaN)}<p class="muted">${t(UI.noval)}</p>`;
  let ec=parseFloat(ecVal);let ecOut='';
