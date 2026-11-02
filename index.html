@@ -72,6 +72,7 @@ nav svg{width:1.7rem;height:1.7rem;stroke:currentColor;fill:none;stroke-width:2;
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin:.3rem 0 .6rem}
 .tiles .opt svg{width:4.5rem;height:4.5rem}
 .tiles .opt{font-size:1rem;padding:.5rem .4rem}
+.tiles.t3{grid-template-columns:1fr 1fr 1fr}
 .art{display:flex;justify-content:center;margin:.5rem 0}
 .art svg{width:9rem;height:9rem}
 .btn{border:2px solid var(--green);background:var(--card);color:var(--green);border-radius:8px;padding:.5rem .9rem;font-weight:800}
@@ -837,34 +838,31 @@ function renderSoil(){
  let ec=parseFloat(ecVal);let ecOut='';
  if(!isNaN(ec)&&ec>=0){const d=ecUnit==='us'?ec/1000:ec;const band=ecBands().find(b=>d<b.max);ecOut=`<div class="card ${band.cls}"><b>${d.toFixed(2)} dS/m (${Math.round(d*1000)} µS/cm)</b>${ecMeth==='m15'?`<p><b>${t(UI.eceEst)} ${(d*EC15_F[tex]).toFixed(1)} dS/m</b> · ${t(UI.tex[tex])}</p>`:''}${ecScale(d,ecBands())}<p>${t(band.t)}</p>${ecMeth==='m15'&&d*EC15_F[tex]<0.4?`<p>${t(UI.lowFert)}</p>`:''}${ecMeth==='m15'?`<p class="muted">${t(UI.eceHow)}</p>`:''}</div>`;}
  else ecOut=`${ecScale(NaN,ecBands())}<p class="muted">${t(UI.noval)}</p>`;
- return `${cropBar()}<h2>${t(UI.phTitle)}</h2><div class="card green"><b>${t(UI.targetGen)} · ${t(UI.cropN[crop])}: ${CROPS_CFG[crop].ph[0]}–${CROPS_CFG[crop].ph[1]}</b></div>
- <label class="f">${t(UI.phm)}</label><div class="tiles">${[['probe','probe',UI.phprobe],['slurry','cup',UI.phslurry]].map(([k,ic,l])=>`<button class="opt ${phMeth===k?'on':''}" onclick="phMeth='${k}';render()">${pic(ic)}<span>${t(l)}</span></button>`).join('')}</div>${phMeth==='probe'?`<div class="card amber"><p>${t(UI.probeNote)}</p></div>`:''}
+ const t3=(items,cur,setter)=>`<div class="tiles t3">${items.map(([k,ic,l])=>`<button class="opt ${cur===k?'on':''}" onclick="${setter}='${k}';render()">${pic(ic)}<span>${typeof l==='string'?l:t(l)}</span></button>`).join('')}</div>`;
+ const t2=(items,cur,setter)=>`<div class="tiles">${items.map(([k,ic,l])=>`<button class="opt ${cur===k?'on':''}" onclick="${setter}='${k}';render()">${pic(ic)}<span>${typeof l==='string'?l:t(l)}</span></button>`).join('')}</div>`;
+ const needTex=ecMeth==='m15'||(!isNaN(ph)&&(ph<CROPS_CFG[crop].ph[0]||ph>CROPS_CFG[crop].ph[1]));
+ const needG=ecMeth==='mpaste'||ecMeth==='m15';
+ return `${cropBar()}
+ <h2>${t(UI.phTitle)}</h2><div class="card green"><b>${t(UI.targetGen)} · ${t(UI.cropN[crop])}: ${CROPS_CFG[crop].ph[0]}–${CROPS_CFG[crop].ph[1]}</b></div>
  <label class="f">${t(UI.phIn)}</label><input class="num" type="text" inputmode="decimal" value="${esc(phVal)}" oninput="phVal=this.value;renderSoilOnly()">
- <div id="phOut">${phOut}</div>
+ <label class="f">${t(UI.phm)}</label>${t2([['probe','probe',UI.phprobe],['slurry','cup',UI.phslurry]],phMeth,'phMeth')}${phMeth==='probe'?`<div class="card amber"><p>${t(UI.probeNote)}</p></div>`:''}
  <h2 style="margin-top:1.2rem">${t(UI.ecTitle)}</h2>
- <label class="f">${t(UI.method)}</label><div class="tiles">${[['mprobe','probe',UI.mprobe],['m15','cup',UI.m15],['mpaste','lab',UI.mpaste],['mpour','pot',UI.mpour],['mwater','water',UI.mwater]].map(([k,ic,l])=>`<button class="opt ${ecMeth===k?'on':''}" onclick="ecMeth='${k}';render()">${pic(ic)}<span>${t(l)}</span></button>`).join('')}</div>
- ${ecMeth==='mprobe'?`<div class="card amber"><p>${t(UI.probeNote)}</p></div>`:''}
- ${(ecMeth==='mpaste'||ecMeth==='m15')?`${ecMeth==='m15'?texTiles():''}<label class="f">${t(UI.cropG)}</label><div class="tiles">${[['s','margin',UI.gS],['m','tomato',UI.gM],['t','wheat',UI.gT]].map(([k,ic,l])=>`<button class="opt ${cropG===k?'on':''}" onclick="cropG='${k}';render()">${pic(ic)}<span>${t(l)}</span></button>`).join('')}</div>`:''}
- <label class="f">${t(UI.unit)}</label><div class="tiles">${[['ds','unit_ds','dS/m (mS/cm)'],['us','unit_us','µS/cm']].map(([k,ic,l])=>`<button class="opt ${ecUnit===k?'on':''}" onclick="ecUnit='${k}';render()">${pic(ic)}<span>${l}</span></button>`).join('')}</div>
+ <label class="f">${t(UI.unit)}</label>${t2([['ds','unit_ds','dS/m (mS/cm)'],['us','unit_us','µS/cm']],ecUnit,'ecUnit')}
  <label class="f">${t(UI.ecIn)}</label><input class="num" type="text" inputmode="decimal" value="${esc(ecVal)}" oninput="ecVal=this.value;renderSoilOnly()">
- <div id="ecOut">${ecOut}</div>
+ <label class="f">${t(UI.method)}</label>${t2([['mprobe','probe',UI.mprobe],['m15','cup',UI.m15],['mpaste','lab',UI.mpaste],['mpour','pot',UI.mpour],['mwater','water',UI.mwater]],ecMeth,'ecMeth')}
+ ${ecMeth==='mprobe'?`<div class="card amber"><p>${t(UI.probeNote)}</p></div>`:''}
+ ${needTex?`<label class="f">${t(UI.texture)}</label>${t3([['sand','sand',UI.tex.sand],['loam','loam',UI.tex.loam],['clay','clay',UI.tex.clay]],tex,'tex')}`:''}
+ ${needG?`<label class="f">${t(UI.cropG)}</label>${t3([['s','margin',UI.gS],['m','tomato',UI.gM],['t','wheat',UI.gT]],cropG,'cropG')}`:''}
+ <div class="sect">${t(UI.phTitle)}</div><div id="phOut">${phOut}</div>
+ <div class="sect">${t(UI.ecTitle)}</div><div id="ecOut">${ecOut}</div>
  ${cropTable()}
  <div class="sect">${t(UI.meters)}</div>${METERS.map(m=>`<details><summary>${pic(m.ic)}<span><span class="tag ${m.ok===true?'g':'a'}">${m.ok===true?'✓':'!'}</span>${t(m.title)}</span></summary><div class="body"><p>${t(m.t)}</p></div></details>`).join('')}
  <div class="sect">${t(UI.fieldTests)}</div>${TESTS.map(x=>`<details><summary>${pic(x.leaf)}<span>${t(x.title)}</span></summary><div class="body"><ul>${x.steps.map(s=>`<li>${t(s)}</li>`).join('')}</ul></div></details>`).join('')}`;
 }
-function ecBands(){if(ecMeth!=='mpaste'&&ecMeth!=='m15')return ECB[ecMeth];const g=ECE_G[cropG];const f=ecMeth==='m15'?EC15_F[tex]:1;return ECB.mpaste_tpl.map((b,i)=>({...b,max:i<3?+(g[i]/f).toFixed(3):99}));}
-function texTiles(){return `<label class="f">${t(UI.texture)}</label><div class="tiles" style="grid-template-columns:1fr 1fr 1fr">${['sand','loam','clay'].map(k=>`<button class="opt ${tex===k?'on':''}" onclick="tex='${k}';render()">${pic(k)}<span>${t(UI.tex[k])}</span></button>`).join('')}</div>`;}
-function cropTable(){return `<details><summary>${pic('seesaw')||leaf('margin')}<span>${t(UI.cropTbl)}</span></summary><div class="body"><p>${t(UI.cropIntro)}</p>${['s','m','t'].map(g=>`<p><b>${t(g==='s'?UI.gS:g==='m'?UI.gM:UI.gT)}</b></p><table class="tb">${CROPS.filter(c=>c.g===g).map(c=>`<tr><td>${t(c.n)}</td><td>${c.v}</td></tr>`).join('')}</table>`).join('')}<p class="muted">${t(CROPNOTE)}</p><p><b>${t(UI.feedIntro)}</b></p><table class="tb">${FEED.map(([n,v])=>`<tr><td>${t(n)}</td><td>${v}</td></tr>`).join('')}</table></div></details>`;}
-function limeCard(ph,lo,hi){
- const tx=texTiles();
- const f=(o,v)=>t(o).replace('{a}',ph.toFixed(1)).replace('{b}',v.toFixed(1)).replace('{tex}',t(UI.tex[tex]));
- if(ph<lo){const tt=Math.min(lo-ph,1)*LIME_T[tex];return `<div class="card"><b>${t(UI.lime)}</b>${tx}<p>${f(LIMETXT.need,lo).replace('{t}',tt.toFixed(1))}</p>${tt>1?`<p>${t(LIMETXT.split)}</p>`:''}<p class="muted">${t(LIMETXT.rough)}</p></div>`;}
- if(ph>hi){const tt=(ph-hi)*SULF_T[tex];return `<div class="card"><b>${t(UI.lime)}</b>${tx}<p>${f(LIMETXT.down,hi).replace('{t}',tt.toFixed(2)).replace('{kg}',Math.round(tt*1000))}</p><p class="muted">${t(LIMETXT.rough)}</p></div>`;}
- return '';
-}
-function bar(n,a,c,risk){return `<div class="bar"><span class="n">${n}</span><span class="t"><i style="width:${Math.round(a*100)}%;background:${c}"></i></span><span class="v">${Math.round(a*100)}%</span></div>`;}
 function renderSoilOnly(){ /* re-render only result blocks so inputs keep focus */
  const tmp=document.createElement('div');tmp.innerHTML=renderSoil();
+ const hadTex=!!document.querySelector('#view .tiles.t3');const hasTex=!!tmp.querySelector('.tiles.t3');
+ if(hadTex!==hasTex){const a=document.activeElement;const v=a&&a.value;const isPh=a&&a.getAttribute('oninput')&&a.getAttribute('oninput').startsWith('phVal');render();const inp=document.querySelectorAll('#view input.num')[isPh?0:1];if(inp){inp.focus();inp.setSelectionRange(v.length,v.length);}return;}
  $('#phOut').innerHTML=tmp.querySelector('#phOut').innerHTML;$('#ecOut').innerHTML=tmp.querySelector('#ecOut').innerHTML;
 }
 
