@@ -742,8 +742,15 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const C=()=>lang==='zh'?'：':': ';
 
 function setLang(l){lang=l;localStorage.setItem('nt_lang',l);document.documentElement.lang=l==='zh'?'zh':l==='bm'?'ms':'en';$('#langScreen').style.display='none';$('#app').style.display='block';render();}
-function cycleLang(){setLang(LANGORDER[(LANGORDER.indexOf(lang)+1)%3]);}
-function cycleSize(){fsIdx=(fsIdx+1)%FS.length;localStorage.setItem('nt_fs',fsIdx);applySize();}
+function keepPlace(fn){ /* re-render without losing scroll position or open sections */
+ const v=$('#view');const open=[...v.querySelectorAll('details')].map(d=>d.open);
+ const max=document.documentElement.scrollHeight-window.innerHeight;const ratio=max>0?window.scrollY/max:0;
+ fn();
+ const ds=v.querySelectorAll('details');open.forEach((o,i)=>{if(ds[i])ds[i].open=o;});
+ const max2=document.documentElement.scrollHeight-window.innerHeight;window.scrollTo(0,Math.round(ratio*Math.max(0,max2)));
+}
+function cycleLang(){keepPlace(()=>setLang(LANGORDER[(LANGORDER.indexOf(lang)+1)%3]));}
+function cycleSize(){keepPlace(()=>{fsIdx=(fsIdx+1)%FS.length;localStorage.setItem('nt_fs',fsIdx);applySize();});}
 function applySize(){document.documentElement.style.setProperty('--fs',FS[fsIdx]+'px');}
 function mobTag(m){return `<span class="tag ${m}">${t(m==='m'?UI.mobile:m==='i'?UI.immobile:UI.inter)}</span>`;}
 
