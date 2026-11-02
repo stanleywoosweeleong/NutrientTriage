@@ -89,6 +89,7 @@ nav svg{width:1.7rem;height:1.7rem;stroke:currentColor;fill:none;stroke-width:2;
 .crumbs{display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.6rem}
 .crumbs span{background:var(--green2);color:var(--green);border-radius:6px;padding:.1rem .5rem;font-weight:700;font-size:.9rem}
 .crumbs{align-items:center}
+#result{scroll-margin-top:4.5rem;margin-top:.8rem}
 .crumbs i{font-style:normal;color:var(--ink2);font-weight:800}
 .chip{border:2px solid var(--green);background:var(--card);color:var(--green);border-radius:8px;padding:.3rem .6rem;font-weight:800;font-size:.95rem}
 .chip.cur{background:var(--green);color:#fff}
@@ -792,12 +793,10 @@ function renderDiag(){
   return cropBar()+`<label class="f">${t(UI.ctxQ)}</label><div class="tiles" style="grid-template-columns:1fr 1fr 1fr">${[['spray','spray'],['fert','soil'],['rain','rain'],['young','sapling'],['flush','leaves3']].map(([k,ic])=>`<button class="opt ${ctx.has(k)?'on':''}" onclick="ctx.has('${k}')?ctx.delete('${k}'):ctx.add('${k}');render()">${pic(ic)}<span>${t(UI.ctxN[k])}</span></button>`).join('')}</div>
   <h2>${t(TREE.start.q)}</h2><div class="grid">${TREE.start.opts.map((o,i)=>`<button class="opt" onclick="path=[${i}];sel=[];done=false;pushStep();render();window.scrollTo(0,0)">${leaf(o.leaf)}<span>${t(o.lbl)}</span></button>`).join('')}</div>`;
  }
- const where=TREE.start.opts[path[0]],node=TREE[where.next],crumbs=[t(where.lbl)];
- if(!done){
-  return chips(where,node)+`<h2>${t(node.q)}</h2><p class="muted">${t(UI.multiHint)}</p><div class="grid">${node.opts.map((o,i)=>`<button class="opt ${sel.includes(i)?'on':''}" onclick="sel=sel.filter(x=>x!=='none');sel.includes(${i})?sel=sel.filter(x=>x!==${i}):sel.push(${i});render()">${leaf(o.leaf)}<span>${t(o.lbl)}</span></button>`).join('')}<button class="opt ${sel.includes('none')?'on':''}" onclick="sel=['none'];done=true;pushStep();render();window.scrollTo(0,0)">${pic('question')}<span>${t(UI.noneOpt)}</span></button></div>
-  <div class="row" style="margin-top:.8rem">${sel.length?`<button class="btn fill" onclick="done=true;pushStep();render();window.scrollTo(0,0)">${t(UI.nextBtn)} ›</button>`:''}</div>`;
- }
- let h=chips(where,node);
+ const where=TREE.start.opts[path[0]],node=TREE[where.next];
+ let h=chips(where,node)+`<h2>${t(node.q)}</h2><p class="muted">${t(UI.multiHint)}</p><div class="grid">${node.opts.map((o,i)=>`<button class="opt ${sel.includes(i)?'on':''}" onclick="sel=sel.filter(x=>x!=='none');sel.includes(${i})?sel=sel.filter(x=>x!==${i}):sel.push(${i});render();showResult()">${leaf(o.leaf)}<span>${t(o.lbl)}</span></button>`).join('')}<button class="opt ${sel.includes('none')?'on':''}" onclick="sel=['none'];render();showResult()">${pic('question')}<span>${t(UI.noneOpt)}</span></button></div>`;
+ if(!sel.length)return h;
+ h+=`<div id="result">`;
  for(const k of ['spray','fert','rain','young','flush'])if(ctx.has(k)){const c=CTX[k];h+=`<div class="card ${c.cls}"><div class="leafrow">${pic(c.art)}<div><span class="tag ${c.cls==='red'?'r':'a'}">${t(UI.checkFirst)}</span><h3>${t(c.title)}</h3></div></div><p>${t(c.text)}</p></div>`;}
  if(sel[0]==='none'){h+=`<div class="card blue"><div class="leafrow">${pic(NONE_CARD.art)}<h3>${t(NONE_CARD.title)}</h3></div><p>${t(NONE_CARD.text)}</p></div>`;}
  else{
@@ -805,20 +804,18 @@ function renderDiag(){
   sel.forEach(i=>{const o=node.opts[i];if(sel.length>1)h+=`<div class="sect">${t(o.lbl)}</div>`;h+=renderResult(o.res);});
  }
  h+=`<div class="card"><p>${t(UI.checkSoil)}</p><div class="row"><button class="btn fill" onclick="tab=2;render();window.scrollTo(0,0)">${t(UI.goSoil)} ›</button><button class="btn" onclick="shareResult()">WhatsApp</button></div></div>`;
- return h+`<p style="text-align:center;margin:.6rem 0"><a href="#" class="lnk" onclick="resetDiag();return false">${t(UI.another)}</a> · <a href="#" class="lnk" onclick="goStep(1);return false">${t(UI.editAns)}</a></p>`;
+ return h+`<p style="text-align:center;margin:.6rem 0"><a href="#" class="lnk" onclick="resetDiag();return false">${t(UI.another)}</a></p></div>`;
 }
+function showResult(){const r=document.getElementById('result');if(r)r.scrollIntoView({behavior:'smooth',block:'start'});}
 function crumbsHtml(c){return c.length?`<div class="crumbs">${c.map(x=>`<span>${x}</span>`).join('')}</div>`:'';}
 /* path chips: [home] › [where] › [pattern]… ; tapping any chip returns to that step */
 function chips(where,node){
  const chip=(lbl,act,cur)=>`<button class="chip ${cur?'cur':''}" onclick="${act}">${lbl}</button>`;
- let h=chip(t(UI.homeChip),"goStep(0)",false)+'<i>›</i>'+chip(t(where.lbl),"goStep(1)",!done);
- if(done)sel.forEach(i=>{h+='<i>›</i>'+chip(i==='none'?t(UI.noneOpt):t(node.opts[i].lbl),i==='none'?"goStep(1)":`dropSel(${i})`,true);});
- return `<div class="crumbs">${h}</div>`;
+ return `<div class="crumbs">${chip(t(UI.homeChip),"goStep(0)",false)+'<i>›</i>'+chip(t(where.lbl),"",true)}</div>`;
 }
 function pushStep(){try{history.pushState({d:1},'');}catch(e){}}
-window.addEventListener('popstate',()=>{if(tab===0&&path.length){if(done){done=false;}else{path=[];sel=[];}render();window.scrollTo(0,0);}});
-function goStep(n){if(n===0){path=[];sel=[];done=false;}else{done=false;}render();window.scrollTo(0,0);}
-function dropSel(i){sel=sel.filter(x=>x!==i);done=false;render();window.scrollTo(0,0);}
+window.addEventListener('popstate',()=>{if(tab===0&&path.length){path=[];sel=[];done=false;render();window.scrollTo(0,0);}});
+function goStep(n){if(n===0){path=[];sel=[];done=false;}render();window.scrollTo(0,0);}
 function resetDiag(){path=[];sel=[];done=false;ctx.clear();render();window.scrollTo(0,0);}
 function shareResult(){
  const where=TREE.start.opts[path[0]],node=TREE[where.next];
