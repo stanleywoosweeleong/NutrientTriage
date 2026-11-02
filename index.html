@@ -840,21 +840,23 @@ function renderSoil(){
  else ecOut=`${ecScale(NaN,ecBands())}<p class="muted">${t(UI.noval)}</p>`;
  const t3=(items,cur,setter)=>`<div class="tiles t3">${items.map(([k,ic,l])=>`<button class="opt ${cur===k?'on':''}" onclick="${setter}='${k}';render()">${pic(ic)}<span>${typeof l==='string'?l:t(l)}</span></button>`).join('')}</div>`;
  const t2=(items,cur,setter)=>`<div class="tiles">${items.map(([k,ic,l])=>`<button class="opt ${cur===k?'on':''}" onclick="${setter}='${k}';render()">${pic(ic)}<span>${typeof l==='string'?l:t(l)}</span></button>`).join('')}</div>`;
- const needTex=ecMeth==='m15'||(!isNaN(ph)&&(ph<CROPS_CFG[crop].ph[0]||ph>CROPS_CFG[crop].ph[1]));
+ const phOut_=!isNaN(ph)&&(ph<CROPS_CFG[crop].ph[0]||ph>CROPS_CFG[crop].ph[1]);
+ const texBlock=`<label class="f">${t(UI.texture)}</label>${t3([['sand','sand',UI.tex.sand],['loam','loam',UI.tex.loam],['clay','clay',UI.tex.clay]],tex,'tex')}`;
  const needG=ecMeth==='mpaste'||ecMeth==='m15';
  return `${cropBar()}
  <h2>${t(UI.phTitle)}</h2><div class="card green"><b>${t(UI.targetGen)} · ${t(UI.cropN[crop])}: ${CROPS_CFG[crop].ph[0]}–${CROPS_CFG[crop].ph[1]}</b></div>
  <label class="f">${t(UI.phIn)}</label><input class="num" type="text" inputmode="decimal" value="${esc(phVal)}" oninput="phVal=this.value;renderSoilOnly()">
  <label class="f">${t(UI.phm)}</label>${t2([['probe','probe',UI.phprobe],['slurry','cup',UI.phslurry]],phMeth,'phMeth')}${phMeth==='probe'?`<div class="card amber"><p>${t(UI.probeNote)}</p></div>`:''}
+ ${phOut_?texBlock:''}
+ <div id="phOut">${phOut}</div>
  <h2 style="margin-top:1.2rem">${t(UI.ecTitle)}</h2>
  <label class="f">${t(UI.unit)}</label>${t2([['ds','unit_ds','dS/m (mS/cm)'],['us','unit_us','µS/cm']],ecUnit,'ecUnit')}
  <label class="f">${t(UI.ecIn)}</label><input class="num" type="text" inputmode="decimal" value="${esc(ecVal)}" oninput="ecVal=this.value;renderSoilOnly()">
  <label class="f">${t(UI.method)}</label>${t2([['mprobe','probe',UI.mprobe],['m15','cup',UI.m15],['mpaste','lab',UI.mpaste],['mpour','pot',UI.mpour],['mwater','water',UI.mwater]],ecMeth,'ecMeth')}
  ${ecMeth==='mprobe'?`<div class="card amber"><p>${t(UI.probeNote)}</p></div>`:''}
- ${needTex?`<label class="f">${t(UI.texture)}</label>${t3([['sand','sand',UI.tex.sand],['loam','loam',UI.tex.loam],['clay','clay',UI.tex.clay]],tex,'tex')}`:''}
+ ${ecMeth==='m15'&&!phOut_?texBlock:''}
  ${needG?`<label class="f">${t(UI.cropG)}</label>${t3([['s','margin',UI.gS],['m','tomato',UI.gM],['t','wheat',UI.gT]],cropG,'cropG')}`:''}
- <div class="sect">${t(UI.phTitle)}</div><div id="phOut">${phOut}</div>
- <div class="sect">${t(UI.ecTitle)}</div><div id="ecOut">${ecOut}</div>
+ <div id="ecOut">${ecOut}</div>
  ${cropTable()}
  <div class="sect">${t(UI.meters)}</div>${METERS.map(m=>`<details><summary>${pic(m.ic)}<span><span class="tag ${m.ok===true?'g':'a'}">${m.ok===true?'✓':'!'}</span>${t(m.title)}</span></summary><div class="body"><p>${t(m.t)}</p></div></details>`).join('')}
  <div class="sect">${t(UI.fieldTests)}</div>${TESTS.map(x=>`<details><summary>${pic(x.leaf)}<span>${t(x.title)}</span></summary><div class="body"><ul>${x.steps.map(s=>`<li>${t(s)}</li>`).join('')}</ul></div></details>`).join('')}`;
