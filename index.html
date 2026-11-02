@@ -207,6 +207,8 @@ const UI={
  meters:_('你手上的仪表能测什么、不能测什么','What your meter can and cannot measure','Apa yang meter anda boleh dan tidak boleh ukur'),mpour:_('盆栽/介质淋出液','Pot / substrate pour-through','Pasu / larutan keluar'),mwater:_('灌溉水','Irrigation water','Air pengairan'),
  avail:_('在此 pH 下的养分有效性','Nutrient availability at this pH','Ketersediaan nutrien pada pH ini'),
  noval:_('输入数值后显示结果。','Enter a value to see the result.','Masukkan nilai untuk melihat keputusan.'),
+ badNum:_('请只输入数字，例如 5.5','Please enter a number only, e.g. 5.5','Sila masukkan nombor sahaja, cth. 5.5'),
+ phRange:_('土壤 pH 应在 2–11 之间，请检查读数。','Soil pH should be between 2 and 11 — check the reading.','pH tanah sepatutnya antara 2 dan 11 — semak bacaan.'),
  alrisk:_('铝毒风险','Al toxicity risk','Risiko toksik Al'),
  fieldTests:_('不用送实验室的田间检测','Field tests without a lab','Ujian ladang tanpa makmal'),
  antag:_('养分相克（一多则另一缺）','Nutrient antagonism (too much of one locks out another)','Antagonisme nutrien (lebihan satu mengunci yang lain)'),
@@ -740,6 +742,7 @@ function setCrop(c){crop=c;localStorage.setItem('nt_crop',c);cropG=CROPS_CFG[c].
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const C=()=>lang==='zh'?'：':': ';
+const num=v=>{v=String(v).trim().replace(',','.');return /^\d*\.?\d+$/.test(v)?parseFloat(v):NaN;};
 
 function setLang(l){lang=l;localStorage.setItem('nt_lang',l);document.documentElement.lang=l==='zh'?'zh':l==='bm'?'ms':'en';$('#langScreen').style.display='none';$('#app').style.display='block';render();}
 function keepPlace(fn){ /* re-render without losing scroll position or open sections */
@@ -845,17 +848,17 @@ function feedCard(){
 function npkCard(){return `<details><summary>${leaf('tree')}<span>${t(NPK.title)}</span></summary><div class="body">${ageRow()}<p>${t(NPK.intro)}</p>${placement()}<table class="tb"><tr>${NPK.cols.map(c=>`<th>${t(c)}</th>`).join('')}</tr>${NPK.rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table><p>${t(NPK.note)}</p></div></details>`;}
 /* --- Soil --- */
 function renderSoil(){
- const ph=parseFloat(phVal);
+ const ph=num(phVal),ec=num(ecVal);const phBad=phVal.trim()!==''&&isNaN(ph);const ecBad=ecVal.trim()!==''&&isNaN(ec);
  let phOut='';
  if(!isNaN(ph)&&ph>=2&&ph<=11){
   const [lo,hi]=CROPS_CFG[crop].ph;const band=PHTEXT[ph<lo-1?0:ph<lo?1:ph<=hi?2:ph<=hi+1?3:4];
   phOut=`<div class="card ${band.cls}"><b>pH ${ph.toFixed(1)}</b>${phScale(ph)}<p>${t(band.t)}</p></div>`+limeCard(ph,lo,hi)+`<div class="card"><b>${t(UI.avail)}</b>`;
   for(const id of ['N','P','K','Ca','Mg','S','Fe','Mn','Zn','Cu','B','Mo']){const a=interp(PHC[id],ph);phOut+=bar(lang==='zh'?`${id} ${t(N[id].name)}`:id,a,a<.4?'#9b1c1c':a<.7?'#c27a00':'#2e6b34');}
   const al=interp(PHC.AL,ph);phOut+=bar(t(UI.alrisk),al,al>.5?'#9b1c1c':al>.1?'#c27a00':'#2e6b34')+`</div>`;
- }else phOut=`${phScale(NaN)}<p class="muted">${t(UI.noval)}</p>`;
- let ec=parseFloat(ecVal);let ecOut='';
+ }else phOut=`${phScale(NaN)}<p class="muted">${t(phBad?UI.badNum:(!isNaN(ph)?UI.phRange:UI.noval))}</p>`;
+ let ecOut='';
  if(!isNaN(ec)&&ec>=0){const d=ecUnit==='us'?ec/1000:ec;const bands=ecBands();const band=bands.find(b=>d<b.max)||bands[bands.length-1];ecOut=`<div class="card ${band.cls}"><b>${d.toFixed(2)} dS/m (${Math.round(d*1000)} µS/cm)</b>${ecMeth==='m15'?`<p><b>${t(UI.eceEst)} ${(d*EC15_F[tex]).toFixed(1)} dS/m</b> · ${t(UI.tex[tex])}</p>`:''}${ecScale(d,ecBands())}<p>${t(band.t).split('{crop}').join(t(UI.cropN[crop]))}</p>${ecMeth==='m15'?`<p class="muted">${t(UI.eceHow)}</p>`:''}</div>`;}
- else ecOut=`${ecScale(NaN,ecBands())}<p class="muted">${t(UI.noval)}</p>`;
+ else ecOut=`${ecScale(NaN,ecBands())}<p class="muted">${t(ecBad?UI.badNum:UI.noval)}</p>`;
  const t3=(items,cur,setter)=>`<div class="tiles t3">${items.map(([k,ic,l])=>`<button class="opt ${cur===k?'on':''}" onclick="${setter}='${k}';render()">${pic(ic)}<span>${typeof l==='string'?l:t(l)}</span></button>`).join('')}</div>`;
  const t2=(items,cur,setter)=>`<div class="tiles">${items.map(([k,ic,l])=>`<button class="opt ${cur===k?'on':''}" onclick="${setter}='${k}';render()">${pic(ic)}<span>${typeof l==='string'?l:t(l)}</span></button>`).join('')}</div>`;
  const phOut_=!isNaN(ph)&&(ph<CROPS_CFG[crop].ph[0]||ph>CROPS_CFG[crop].ph[1]);
@@ -912,7 +915,7 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){navigator.service
 
 document.getElementById('langArt').innerHTML=leaf('interV');
 /* ============ boot ============ */
-if(lang){$('#langScreen').style.display='none';$('#app').style.display='block';render();}
+if(lang){document.documentElement.lang=lang==='zh'?'zh':lang==='bm'?'ms':'en';$('#langScreen').style.display='none';$('#app').style.display='block';render();}
 </script>
 </body>
 </html>
