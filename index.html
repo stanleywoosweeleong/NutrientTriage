@@ -859,6 +859,17 @@ function renderSoil(){
  <div class="sect">${t(UI.meters)}</div>${METERS.map(m=>`<details><summary>${pic(m.ic)}<span><span class="tag ${m.ok===true?'g':'a'}">${m.ok===true?'✓':'!'}</span>${t(m.title)}</span></summary><div class="body"><p>${t(m.t)}</p></div></details>`).join('')}
  <div class="sect">${t(UI.fieldTests)}</div>${TESTS.map(x=>`<details><summary>${pic(x.leaf)}<span>${t(x.title)}</span></summary><div class="body"><ul>${x.steps.map(s=>`<li>${t(s)}</li>`).join('')}</ul></div></details>`).join('')}`;
 }
+function ecBands(){if(ecMeth!=='mpaste'&&ecMeth!=='m15')return ECB[ecMeth];const g=ECE_G[cropG];const f=ecMeth==='m15'?EC15_F[tex]:1;return ECB.mpaste_tpl.map((b,i)=>({...b,max:i<3?+(g[i]/f).toFixed(3):99}));}
+function texTiles(){return `<label class="f">${t(UI.texture)}</label><div class="tiles" style="grid-template-columns:1fr 1fr 1fr">${['sand','loam','clay'].map(k=>`<button class="opt ${tex===k?'on':''}" onclick="tex='${k}';render()">${pic(k)}<span>${t(UI.tex[k])}</span></button>`).join('')}</div>`;}
+function cropTable(){return `<details><summary>${pic('seesaw')||leaf('margin')}<span>${t(UI.cropTbl)}</span></summary><div class="body"><p>${t(UI.cropIntro)}</p>${['s','m','t'].map(g=>`<p><b>${t(g==='s'?UI.gS:g==='m'?UI.gM:UI.gT)}</b></p><table class="tb">${CROPS.filter(c=>c.g===g).map(c=>`<tr><td>${t(c.n)}</td><td>${c.v}</td></tr>`).join('')}</table>`).join('')}<p class="muted">${t(CROPNOTE)}</p><p><b>${t(UI.feedIntro)}</b></p><table class="tb">${FEED.map(([n,v])=>`<tr><td>${t(n)}</td><td>${v}</td></tr>`).join('')}</table></div></details>`;}
+function limeCard(ph,lo,hi){
+ const tx='';
+ const f=(o,v)=>t(o).replace('{a}',ph.toFixed(1)).replace('{b}',v.toFixed(1)).replace('{tex}',t(UI.tex[tex]));
+ if(ph<lo){const tt=Math.min(lo-ph,1)*LIME_T[tex];return `<div class="card"><b>${t(UI.lime)}</b>${tx}<p>${f(LIMETXT.need,lo).replace('{t}',tt.toFixed(1))}</p>${tt>1?`<p>${t(LIMETXT.split)}</p>`:''}<p class="muted">${t(LIMETXT.rough)}</p></div>`;}
+ if(ph>hi){const tt=(ph-hi)*SULF_T[tex];return `<div class="card"><b>${t(UI.lime)}</b>${tx}<p>${f(LIMETXT.down,hi).replace('{t}',tt.toFixed(2)).replace('{kg}',Math.round(tt*1000))}</p><p class="muted">${t(LIMETXT.rough)}</p></div>`;}
+ return '';
+}
+function bar(n,a,c,risk){return `<div class="bar"><span class="n">${n}</span><span class="t"><i style="width:${Math.round(a*100)}%;background:${c}"></i></span><span class="v">${Math.round(a*100)}%</span></div>`;}
 function renderSoilOnly(){ /* re-render only result blocks so inputs keep focus */
  const tmp=document.createElement('div');tmp.innerHTML=renderSoil();
  const hadTex=!!document.querySelector('#view .tiles.t3');const hasTex=!!tmp.querySelector('.tiles.t3');
