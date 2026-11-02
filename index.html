@@ -175,6 +175,8 @@ const UI={
  eceHow:_('1:5 读数 × 质地系数（沙土 15、壤土 10、黏土 7）得到 ECe 估计值，再按作物耐盐组分级。','1:5 reading × texture factor (sand 15, loam 10, clay 7) gives an ECe estimate, graded by the crop\'s tolerance group.','Bacaan 1:5 × faktor tekstur (pasir 15, lom 10, liat 7) memberi anggaran ECe, digred mengikut kumpulan toleransi tanaman.'),
  lowFert:_('ECe 估计很低——土壤几乎没有可溶养分，按正常量施肥。','Estimated ECe is very low — almost no soluble nutrients; feed at normal rates.','Anggaran ECe sangat rendah — hampir tiada nutrien larut; beri baja kadar biasa.'),
  gS:_('敏感','Sensitive','Sensitif'),gM:_('中等','Moderate','Sederhana'),gT:_('耐盐','Tolerant','Toleran'),
+ gSx:_('生菜、豆类、辣椒、胡萝卜','lettuce, beans, chilli, carrot','salad, kacang, cili, lobak'),gMx:_('番茄、黄瓜、木瓜','tomato, cucumber, papaya','tomato, timun, betik'),gTx:_('芦笋、甜菜','asparagus, beet','asparagus, bit'),
+ gFixed:_('耐盐组由作物决定','Tolerance group set by crop','Kumpulan toleransi ditetapkan oleh tanaman'),
  cropTbl:_('各种作物的盐分耐受 (ECe) 与肥液 EC','Salt tolerance (ECe) and feed EC by crop','Toleransi garam (ECe) dan EC larutan baja mengikut tanaman'),
  cropIntro:_('ECe = 饱和浸提液电导率，dS/m。表中数字是产量「开始下降」的门槛（Maas–Hoffman / FAO），不是最佳值——作物在这个数以下才舒服。1:5 读数要乘以质地系数才能对照这张表（沙土 ×15、壤土 ×10、黏土 ×7，土壤页会自动换算）；直插式读数随含水量变化，只看趋势。','ECe = saturated-paste extract EC in dS/m. The figures are the threshold where yield *starts* to fall (Maas–Hoffman / FAO), not an optimum — the crop is comfortable below them. A 1:5 reading must be multiplied by a texture factor before comparing with this table (sand ×15, loam ×10, clay ×7 — the Soil page does this for you); probe readings move with moisture and are for trends only.','ECe = EC ekstrak pes tepu dalam dS/m. Angka ialah ambang di mana hasil *mula* menurun (Maas–Hoffman / FAO), bukan optimum — tanaman selesa di bawahnya. Bacaan 1:5 mesti didarab dengan faktor tekstur sebelum dibandingkan dengan jadual ini (pasir ×15, lom ×10, liat ×7 — halaman Tanah mengiranya untuk anda); bacaan prob berubah dengan kelembapan dan untuk trend sahaja.'),
  feedIntro:_('水培 / 滴灌肥液 EC (dS/m)——这才是「最佳值」，是配肥时要调到的浓度。果树土栽没有这种肥液标准，看土壤 1:5 在 0.15–0.4 即可。','Hydroponic / fertigation feed EC (dS/m) — this one *is* an optimum, the strength to mix the feed to. Fruit trees in soil have no feed standard; aim for soil 1:5 EC of 0.15–0.4.','EC larutan hidroponik / fertigasi (dS/m) — ini memang optimum, kepekatan yang perlu dicampur. Pokok buah di tanah tiada piawai larutan; sasarkan EC tanah 1:5 pada 0.15–0.4.'),
@@ -725,7 +727,7 @@ const LIMITS=[
 
 /* ============ state & render ============ */
 let tab=0,path=[],sel=[],done=false,ctx=new Set(),phVal='',ecVal='',ecUnit='ds',ecMeth='m15',phMeth='probe',tex='loam',stage=0;
-let crop=localStorage.getItem('nt_crop')||'durian';let cropG=CROPS_CFG[crop].g;
+let crop=localStorage.getItem('nt_crop')||'durian';if(!CROPS_CFG[crop])crop='durian';let cropG=CROPS_CFG[crop].g;
 function setCrop(c){crop=c;localStorage.setItem('nt_crop',c);cropG=CROPS_CFG[c].g;render();}
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
@@ -855,7 +857,7 @@ function renderSoil(){
  <label class="f">${t(UI.method)}</label>${t2([['mprobe','probe',UI.mprobe],['m15','cup',UI.m15],['mpaste','lab',UI.mpaste],['mpour','pot',UI.mpour],['mwater','water',UI.mwater]],ecMeth,'ecMeth')}
  ${ecMeth==='mprobe'?`<div class="card amber"><p>${t(UI.probeNote)}</p></div>`:''}
  ${ecMeth==='m15'&&!phOut_?texBlock:''}
- ${needG?`<label class="f">${t(UI.cropG)}</label>${t3([['s','margin',UI.gS],['m','tomato',UI.gM],['t','wheat',UI.gT]],cropG,'cropG')}`:''}
+ ${needG?(crop==='veg'?`<label class="f">${t(UI.cropG)}</label><div class="tiles t3">${[['s','margin',UI.gS,UI.gSx],['m','tomato',UI.gM,UI.gMx],['t','wheat',UI.gT,UI.gTx]].map(([k,ic,l,x])=>`<button class="opt ${cropG===k?'on':''}" onclick="cropG='${k}';render()">${pic(ic)}<span>${t(l)}<br><small style="font-weight:600">${t(x)}</small></span></button>`).join('')}</div>`:`<div class="card green"><span class="tag g">${t(UI.gFixed)}</span> <b>${t(UI.cropN[crop])} · ${t(cropG==='s'?UI.gS:cropG==='m'?UI.gM:UI.gT)}</b></div>`):''}
  <div id="ecOut">${ecOut}</div>
  ${cropTable()}
  <div class="sect">${t(UI.meters)}</div>${METERS.map(m=>`<details><summary>${pic(m.ic)}<span><span class="tag ${m.ok===true?'g':'a'}">${m.ok===true?'✓':'!'}</span>${t(m.title)}</span></summary><div class="body"><p>${t(m.t)}</p></div></details>`).join('')}
