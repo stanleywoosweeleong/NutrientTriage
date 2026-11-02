@@ -88,6 +88,11 @@ nav svg{width:1.7rem;height:1.7rem;stroke:currentColor;fill:none;stroke-width:2;
 .seg button.on{border-color:var(--green);background:var(--green2);color:var(--green)}
 .crumbs{display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.6rem}
 .crumbs span{background:var(--green2);color:var(--green);border-radius:6px;padding:.1rem .5rem;font-weight:700;font-size:.9rem}
+.crumbs{align-items:center}
+.crumbs i{font-style:normal;color:var(--ink2);font-weight:800}
+.chip{border:2px solid var(--green);background:var(--card);color:var(--green);border-radius:8px;padding:.3rem .6rem;font-weight:800;font-size:.95rem}
+.chip.cur{background:var(--green);color:#fff}
+.lnk{color:var(--green);font-weight:800;text-decoration:underline;text-underline-offset:3px}
 details{border:1.5px solid var(--line);border-radius:var(--r);background:var(--card);margin-bottom:.6rem}
 details summary{list-style:none;padding:.7rem .8rem;font-weight:800;font-size:1.05rem;display:flex;align-items:center;gap:.6rem;cursor:pointer}
 details summary::-webkit-details-marker{display:none}
@@ -192,7 +197,10 @@ const UI={
  ctxQ:_('最近两周有没有这些情况？（可多选，没有就跳过）','Anything in the last 2 weeks? (tap all that apply, or skip)','Ada perkara ini dalam 2 minggu lepas? (pilih semua yang berkenaan, atau langkau)'),
  ctxN:{spray:_('喷过叶面肥 / 农药','Sprayed recently','Baru sembur'),fert:_('土施过肥料','Soil-fertilised','Baja ke tanah'),rain:_('大雨 / 积水','Heavy rain / flooding','Hujan lebat / banjir'),young:_('树龄不到 3 年','Tree under 3 years','Pokok bawah 3 tahun'),flush:_('正在抽梢 / 换叶','Flushing / shedding leaves','Berpucuk / gugur daun')},
  multiHint:_('可多选——把看到的都点上','Tap every pattern you see','Pilih semua corak yang kelihatan'),
- nextBtn:_('看结果','See result','Lihat keputusan'),noneOpt:_('都不像','None of these','Tiada yang sepadan'),
+ nextBtn:_('看结果','See result','Lihat keputusan'),
+ another:_('检查另一个症状','Check another symptom','Semak simptom lain'),
+ editAns:_('修改答案','Edit answers','Ubah jawapan'),
+ homeChip:_('辨症','Diagnose','Diagnosis'),noneOpt:_('都不像','None of these','Tiada yang sepadan'),
  share:_('分享到 WhatsApp','Share on WhatsApp','Kongsi ke WhatsApp'),
  checkFirst:_('先看这个','Check this first','Semak ini dahulu'),
  combo:_('多种症状一起出现','Several patterns together','Beberapa corak serentak'),
@@ -768,7 +776,7 @@ function render(){
  $('#hTitle').textContent=t(UI.title);
  $('#btnLang').textContent=LANGLBL[lang];
  applySize();
- $('#nav').innerHTML=UI.nav.map((n,i)=>`<button class="${i===tab?'on':''}" onclick="tab=${i};render();window.scrollTo(0,0)">${ICONS[i]}<span>${t(n)}</span></button>`).join('');
+ $('#nav').innerHTML=UI.nav.map((n,i)=>`<button class="${i===tab?'on':''}" onclick="if(tab===${i}&&${i}===0)resetDiag();else{tab=${i};render();window.scrollTo(0,0)}">${ICONS[i]}<span>${t(n)}</span></button>`).join('');
  const v=$('#view');
  if(tab===0)v.innerHTML=renderDiag();
  else if(tab===1)v.innerHTML=renderNutrients();
@@ -782,24 +790,36 @@ function cropBar(){return `<label class="f">${t(UI.cropLbl)}</label><div class="
 function renderDiag(){
  if(path.length===0){
   return cropBar()+`<label class="f">${t(UI.ctxQ)}</label><div class="tiles" style="grid-template-columns:1fr 1fr 1fr">${[['spray','spray'],['fert','soil'],['rain','rain'],['young','sapling'],['flush','leaves3']].map(([k,ic])=>`<button class="opt ${ctx.has(k)?'on':''}" onclick="ctx.has('${k}')?ctx.delete('${k}'):ctx.add('${k}');render()">${pic(ic)}<span>${t(UI.ctxN[k])}</span></button>`).join('')}</div>
-  <h2>${t(TREE.start.q)}</h2><div class="grid">${TREE.start.opts.map((o,i)=>`<button class="opt" onclick="path=[${i}];sel=[];done=false;render();window.scrollTo(0,0)">${leaf(o.leaf)}<span>${t(o.lbl)}</span></button>`).join('')}</div>`;
+  <h2>${t(TREE.start.q)}</h2><div class="grid">${TREE.start.opts.map((o,i)=>`<button class="opt" onclick="path=[${i}];sel=[];done=false;pushStep();render();window.scrollTo(0,0)">${leaf(o.leaf)}<span>${t(o.lbl)}</span></button>`).join('')}</div>`;
  }
  const where=TREE.start.opts[path[0]],node=TREE[where.next],crumbs=[t(where.lbl)];
  if(!done){
-  return crumbsHtml(crumbs)+`<h2>${t(node.q)}</h2><p class="muted">${t(UI.multiHint)}</p><div class="grid">${node.opts.map((o,i)=>`<button class="opt ${sel.includes(i)?'on':''}" onclick="sel=sel.filter(x=>x!=='none');sel.includes(${i})?sel=sel.filter(x=>x!==${i}):sel.push(${i});render()">${leaf(o.leaf)}<span>${t(o.lbl)}</span></button>`).join('')}<button class="opt ${sel.includes('none')?'on':''}" onclick="sel=['none'];done=true;render();window.scrollTo(0,0)">${pic('question')}<span>${t(UI.noneOpt)}</span></button></div>
-  <div class="row" style="margin-top:.8rem"><button class="btn" onclick="path=[];sel=[];render()">‹ ${t(UI.back)}</button>${sel.length?`<button class="btn fill" onclick="done=true;render();window.scrollTo(0,0)">${t(UI.nextBtn)} ›</button>`:''}</div>`;
+  return chips(where,node)+`<h2>${t(node.q)}</h2><p class="muted">${t(UI.multiHint)}</p><div class="grid">${node.opts.map((o,i)=>`<button class="opt ${sel.includes(i)?'on':''}" onclick="sel=sel.filter(x=>x!=='none');sel.includes(${i})?sel=sel.filter(x=>x!==${i}):sel.push(${i});render()">${leaf(o.leaf)}<span>${t(o.lbl)}</span></button>`).join('')}<button class="opt ${sel.includes('none')?'on':''}" onclick="sel=['none'];done=true;pushStep();render();window.scrollTo(0,0)">${pic('question')}<span>${t(UI.noneOpt)}</span></button></div>
+  <div class="row" style="margin-top:.8rem">${sel.length?`<button class="btn fill" onclick="done=true;pushStep();render();window.scrollTo(0,0)">${t(UI.nextBtn)} ›</button>`:''}</div>`;
  }
- let h=crumbsHtml(crumbs.concat(sel.map(i=>i==='none'?t(UI.noneOpt):t(node.opts[i].lbl))));
+ let h=chips(where,node);
  for(const k of ['spray','fert','rain','young','flush'])if(ctx.has(k)){const c=CTX[k];h+=`<div class="card ${c.cls}"><div class="leafrow">${pic(c.art)}<div><span class="tag ${c.cls==='red'?'r':'a'}">${t(UI.checkFirst)}</span><h3>${t(c.title)}</h3></div></div><p>${t(c.text)}</p></div>`;}
  if(sel[0]==='none'){h+=`<div class="card blue"><div class="leafrow">${pic(NONE_CARD.art)}<h3>${t(NONE_CARD.title)}</h3></div><p>${t(NONE_CARD.text)}</p></div>`;}
  else{
   if(sel.length>1)h+=`<div class="card amber"><b>${t(UI.combo)}</b><p>${t(COMBO_TXT)}</p></div>`;
   sel.forEach(i=>{const o=node.opts[i];if(sel.length>1)h+=`<div class="sect">${t(o.lbl)}</div>`;h+=renderResult(o.res);});
  }
- h+=`<div class="card"><p>${t(UI.checkSoil)}</p><div class="row"><button class="btn fill sm" onclick="tab=2;render();window.scrollTo(0,0)">${t(UI.goSoil)} ›</button><button class="btn sm" onclick="shareResult()">${t(UI.share)}</button></div></div>`;
- return h+`<div class="row" style="margin-top:.8rem"><button class="btn" onclick="done=false;render();window.scrollTo(0,0)">‹ ${t(UI.back)}</button><button class="btn" onclick="path=[];sel=[];done=false;ctx.clear();render();window.scrollTo(0,0)">« ${t(UI.restart)}</button></div>`;
+ h+=`<div class="card"><p>${t(UI.checkSoil)}</p><div class="row"><button class="btn fill" onclick="tab=2;render();window.scrollTo(0,0)">${t(UI.goSoil)} ›</button><button class="btn" onclick="shareResult()">WhatsApp</button></div></div>`;
+ return h+`<p style="text-align:center;margin:.6rem 0"><a href="#" class="lnk" onclick="resetDiag();return false">${t(UI.another)}</a> · <a href="#" class="lnk" onclick="goStep(1);return false">${t(UI.editAns)}</a></p>`;
 }
 function crumbsHtml(c){return c.length?`<div class="crumbs">${c.map(x=>`<span>${x}</span>`).join('')}</div>`:'';}
+/* path chips: [home] › [where] › [pattern]… ; tapping any chip returns to that step */
+function chips(where,node){
+ const chip=(lbl,act,cur)=>`<button class="chip ${cur?'cur':''}" onclick="${act}">${lbl}</button>`;
+ let h=chip(t(UI.homeChip),"goStep(0)",false)+'<i>›</i>'+chip(t(where.lbl),"goStep(1)",!done);
+ if(done)sel.forEach(i=>{h+='<i>›</i>'+chip(i==='none'?t(UI.noneOpt):t(node.opts[i].lbl),i==='none'?"goStep(1)":`dropSel(${i})`,true);});
+ return `<div class="crumbs">${h}</div>`;
+}
+function pushStep(){try{history.pushState({d:1},'');}catch(e){}}
+window.addEventListener('popstate',()=>{if(tab===0&&path.length){if(done){done=false;}else{path=[];sel=[];}render();window.scrollTo(0,0);}});
+function goStep(n){if(n===0){path=[];sel=[];done=false;}else{done=false;}render();window.scrollTo(0,0);}
+function dropSel(i){sel=sel.filter(x=>x!==i);done=false;render();window.scrollTo(0,0);}
+function resetDiag(){path=[];sel=[];done=false;ctx.clear();render();window.scrollTo(0,0);}
 function shareResult(){
  const where=TREE.start.opts[path[0]],node=TREE[where.next];
  let L=[`${t(UI.title)} · ${t(UI.cropN[crop])}`,`${t(where.lbl)}`];
